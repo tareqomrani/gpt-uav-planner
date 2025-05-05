@@ -14,10 +14,16 @@ MAX_LIFT_G = {
 with st.form("uav_form"):
     st.subheader("Flight Parameters")
     drone_model = st.selectbox("Drone Model", list(MAX_LIFT_G.keys()))
-    st.caption(f"Maximum payload for this drone: {MAX_LIFT_G[drone_model]} g")
+    max_lift = MAX_LIFT_G[drone_model]
+    st.caption(f"Maximum payload for this drone: {max_lift} g")
 
     battery_capacity_wh = st.number_input("Battery Capacity (Wh)", min_value=1.0, value=50.0)
-    payload_weight_g = st.number_input("Payload Weight (g)", min_value=0, value=500)
+    default_payload = int(max_lift * 0.5)
+    payload_weight_g = st.number_input("Payload Weight (g)", min_value=0, value=default_payload)
+
+    if payload_weight_g == max_lift:
+        st.warning("Payload is at the maximum lift capacity. The drone may struggle to maintain stable flight.")
+
     flight_speed_kmh = st.number_input("Flight Speed (km/h)", min_value=0.0, value=30.0)
     wind_speed_kmh = st.number_input("Wind Speed (km/h)", min_value=0.0, value=10.0)
     temperature_c = st.number_input("Temperature (°C)", value=25.0)
@@ -26,7 +32,7 @@ with st.form("uav_form"):
     submitted = st.form_submit_button("Estimate")
 
 if submitted:
-    if payload_weight_g > MAX_LIFT_G[drone_model]:
+    if payload_weight_g > max_lift:
         st.error("Payload exceeds lift capacity. The drone cannot take off with this configuration.")
         st.stop()
 
