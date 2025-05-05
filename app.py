@@ -6,7 +6,7 @@ st.title("UAV Battery Efficiency Estimator")
 
 with st.form("uav_form"):
     st.subheader("Flight Parameters")
-    drone_model = st.selectbox("Drone Model", ["Generic Quad", "DJI Phantom", "Custom Build"])
+    drone_model = st.selectbox("Drone Model", ["Generic Quad", "DJI Phantom", "DJI Mini 4 Pro", "Custom Build"])
     battery_capacity_wh = st.number_input("Battery Capacity (Wh)", min_value=1.0, value=50.0)
     payload_weight_g = st.number_input("Payload Weight (g)", min_value=0, value=500)
     flight_speed_kmh = st.number_input("Flight Speed (km/h)", min_value=0.0, value=30.0)
@@ -20,10 +20,11 @@ if submitted:
     if flight_mode in ["Forward Flight", "Waypoint Mission"] and flight_speed_kmh == 0:
         st.warning("Forward flight selected, but speed is 0 km/h. Please enter a valid flight speed.")
     else:
-        base_draw = 15  # Base power draw in W
-        payload_factor = 0.01  # W per gram
-        wind_penalty = 0.2  # W per km/h wind
-        drag_factor = 0.005  # W per (km/h)^2 (simplified aerodynamic drag)
+        # Adjusted realistic base power model
+        base_draw = 55  # Updated to match DJI-like real-world draw in W
+        payload_factor = 0.02  # Scaled for realistic effect
+        wind_penalty = 0.3     # W per km/h wind
+        drag_factor = 0.008    # W per (km/h)^2 (realistic aerodynamic drag)
 
         # Calculate drag power if in forward flight
         if flight_mode in ["Forward Flight", "Waypoint Mission"]:
@@ -33,7 +34,7 @@ if submitted:
 
         total_draw = base_draw + (payload_factor * payload_weight_g) + (wind_penalty * wind_speed_kmh) + drag_draw
 
-        # Prevent division by zero or negative power draw
+        # Prevent invalid power draw
         if total_draw <= 0:
             st.error("Calculated power draw is non-positive. Please check your inputs.")
         else:
