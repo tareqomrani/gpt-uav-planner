@@ -1,4 +1,3 @@
-![UAV Battery Efficiency Estimator Banner](./A_flat_digital_graphic_design_banner_for_a_UAV_Bat.png)
 
 # UAV Battery Efficiency Estimator
 
@@ -8,11 +7,20 @@ This is a lightweight AI-powered estimator for calculating UAV (drone) flight ti
 
 - Estimates battery life based on payload, wind, and speed
 - Offers AI-style tips for improving flight efficiency
-- Demoable without real drone hardware
+- Built with [Streamlit](https://streamlit.io) for mobile-friendly use
+- Publicly demoable without real drone hardware
 
 ## How to Run
 
-Ensure Python is installed, then run:
-
 ```bash
-python app.py
+pip install streamlit
+streamlit run app.py
+```
+
+## Author
+
+Tareq Omrani  
+GitHub: [@tareqomrani](https://github.com/tareqomrani)
+
+---
+*Part of an AI Engineering + UAV toolkit series.*
