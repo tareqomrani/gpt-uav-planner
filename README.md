@@ -1,3 +1,4 @@
+![UAV Battery Efficiency Estimator Banner](./16F28914-AB05-44E9-AB0B-3E6051E6D48E.png)
 
 # UAV Battery Efficiency Estimator
 
@@ -5,10 +6,23 @@ This is a lightweight AI-powered estimator for calculating UAV (drone) flight ti
 
 ## Features
 
-- Estimates battery life based on payload, wind, and speed
-- Offers AI-style tips for improving flight efficiency
-- Built with [Streamlit](https://streamlit.io) for mobile-friendly use
-- Publicly demoable without real drone hardware
+- **Flight Time Estimation**  
+  Calculates the expected flight duration in minutes based on real-world parameters including battery capacity, payload weight, flight speed, wind resistance, and flight mode (hover vs. forward flight). Useful for planning missions within the drone's safe operating limits.
+
+- **Distance Coverage Estimation**  
+  When in forward flight or waypoint mode, the app estimates how far the drone can travel based on flight time and speed, helping you plan delivery routes, aerial mapping areas, or survey zones.
+
+- **Dynamic Power Consumption Model**  
+  Uses a basic physics-informed formula to approximate power draw affected by payload, wind speed, and flight mode. Designed to balance realism with computational simplicity.
+
+- **Mission Risk Insight (AI Style)**  
+  Simulates AI-generated advice using rule-based logic. Based on your input, the app suggests practical adjustments such as reducing payload, avoiding high winds, or increasing battery size to improve endurance or safety.
+
+- **Clean, Interactive User Interface**  
+  Built with [Streamlit](https://streamlit.io) for ease of use and optimized for both desktop and mobile screens—including iPhone. The interface is form-based, intuitive, and supports live updates without reloads.
+
+- **Standalone and Demo-Ready**  
+  Requires no connection to real UAV hardware. All calculations are performed locally using user input or simulated values, making it ideal for demonstrations, training, or rapid prototyping.
 
 ## How to Run
 
