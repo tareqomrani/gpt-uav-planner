@@ -4,18 +4,30 @@ st.set_page_config(page_title="UAV Battery Efficiency Estimator", layout="center
 
 st.title("UAV Battery Efficiency Estimator")
 
-# Max lift capacity per drone model (grams)
-MAX_LIFT_G = {
+# Static lift capacities for preset drones
+STATIC_MAX_LIFT_G = {
     "Generic Quad": 1000,
-    "DJI Phantom": 1200,
-    "Custom Build": 1500
+    "DJI Phantom": 1200
 }
 
 with st.form("uav_form"):
     st.subheader("Flight Parameters")
-    drone_model = st.selectbox("Drone Model", list(MAX_LIFT_G.keys()))
-    max_lift = MAX_LIFT_G[drone_model]
-    st.caption(f"Maximum payload for this drone: {max_lift} g")
+    drone_model = st.selectbox("Drone Model", list(STATIC_MAX_LIFT_G.keys()) + ["Custom Build"])
+
+    if drone_model == "Custom Build":
+        st.markdown("**Custom Lift Calculation:**")
+        num_motors = st.number_input("Number of Motors", min_value=1, value=4)
+        thrust_per_motor = st.number_input("Thrust per Motor (g)", min_value=100, value=1000)
+        frame_weight = 600  # fixed for simplicity
+        battery_weight = 400  # fixed for simplicity
+        max_lift = (num_motors * thrust_per_motor) - frame_weight - battery_weight
+        if max_lift <= 0:
+            st.error("Invalid configuration: calculated max payload is non-positive.")
+            st.stop()
+        st.caption(f"Calculated max payload capacity: {int(max_lift)} g")
+    else:
+        max_lift = STATIC_MAX_LIFT_G[drone_model]
+        st.caption(f"Maximum payload for this drone: {max_lift} g")
 
     battery_capacity_wh = st.number_input("Battery Capacity (Wh)", min_value=1.0, value=50.0)
     default_payload = int(max_lift * 0.5)
