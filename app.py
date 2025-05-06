@@ -4,7 +4,6 @@ st.set_page_config(page_title="UAV Battery Efficiency Estimator", layout="center
 
 st.title("UAV Battery Efficiency Estimator")
 
-# FINAL ENFORCED max payload values
 STATIC_MAX_LIFT_G = {
     "Generic Quad": 800,
     "DJI Phantom": 500
@@ -72,9 +71,11 @@ if submitted:
 
     total_draw = (hover_power + drag_draw + wind_penalty) * efficiency_penalty
     flight_time_minutes = (battery_capacity_wh / total_draw) * 60
-    max_reasonable_minutes = 45
-    if flight_time_minutes > max_reasonable_minutes:
-        flight_time_minutes = max_reasonable_minutes
+
+    # Dynamic cap
+    max_cap_minutes = min(battery_capacity_wh * 1.2, 120)
+    if flight_time_minutes > max_cap_minutes:
+        flight_time_minutes = max_cap_minutes
 
     st.metric("Estimated Flight Time", f"{flight_time_minutes:.1f} minutes")
 
