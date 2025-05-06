@@ -4,7 +4,6 @@ st.set_page_config(page_title="UAV Battery Efficiency Estimator", layout="center
 
 st.title("UAV Battery Efficiency Estimator")
 
-# Static lift capacities for preset drones
 STATIC_MAX_LIFT_G = {
     "Generic Quad": 1000,
     "DJI Phantom": 1200
@@ -18,8 +17,8 @@ with st.form("uav_form"):
         st.markdown("**Custom Lift Calculation:**")
         num_motors = st.number_input("Number of Motors", min_value=1, value=4)
         thrust_per_motor = st.number_input("Thrust per Motor (g)", min_value=100, value=1000)
-        frame_weight = 600  # fixed for simplicity
-        battery_weight = 400  # fixed for simplicity
+        frame_weight = 600
+        battery_weight = 400
         max_lift = (num_motors * thrust_per_motor) - frame_weight - battery_weight
         if max_lift <= 0:
             st.error("Invalid configuration: calculated max payload is non-positive.")
@@ -27,6 +26,8 @@ with st.form("uav_form"):
         st.caption(f"Calculated max payload capacity: {int(max_lift)} g")
     else:
         max_lift = STATIC_MAX_LIFT_G[drone_model]
+        frame_weight = 600
+        battery_weight = 400
         st.caption(f"Maximum payload for this drone: {max_lift} g")
 
     battery_capacity_wh = st.number_input("Battery Capacity (Wh)", min_value=1.0, value=50.0)
@@ -48,14 +49,22 @@ if submitted:
         st.error("Payload exceeds lift capacity. The drone cannot take off with this configuration.")
         st.stop()
 
-    base_draw = 15  # Base power draw in W
-    payload_factor = 0.01  # W per gram
-    wind_penalty = 0.2  # W per km/h wind
-    drag_factor = 0.005  # W per (km/h)^2
+    # Base parameters
+    total_weight_g = frame_weight + battery_weight + payload_weight_g
+    total_weight_kg = total_weight_g / 1000
 
-    drag_draw = drag_factor * (flight_speed_kmh ** 2) if flight_mode in ["Forward Flight", "Waypoint Mission"] else 0
+    base_hover_efficiency = 170  # W per kg at optimal thrust
+    hover_power = base_hover_efficiency * (total_weight_kg ** 1.5)
 
-    total_draw = base_draw + (payload_factor * payload_weight_g) + (wind_penalty * wind_speed_kmh) + drag_draw
+    drag_factor = 0.005
+    drag_draw = drag_factor * (flight_speed_kmh ** 2) if flight_mode != "Hover" else 0
+
+    wind_penalty = 0.2 * wind_speed_kmh  # W added for wind resistance
+
+    # Efficiency loss near max lift
+    efficiency_penalty = 1 + (payload_weight_g / max_lift) * 0.2
+
+    total_draw = (hover_power + drag_draw + wind_penalty) * efficiency_penalty
     flight_time_minutes = (battery_capacity_wh / total_draw) * 60
 
     st.metric("Estimated Flight Time", f"{flight_time_minutes:.1f} minutes")
@@ -73,5 +82,7 @@ if submitted:
         st.write("**Tip**: Increase battery size or reduce mission length.")
     if drag_draw > 10:
         st.write("**Tip**: High flight speed may be causing excessive aerodynamic drag. Consider slowing down.")
+    if efficiency_penalty > 1.15:
+        st.write("**Tip**: Heavy payload is reducing overall flight efficiency. Consider trimming weight if possible.")
 
 st.caption("Demo project by Tareq Omrani | AI Engineering + UAV | 2025")
