@@ -49,23 +49,37 @@ if submitted:
         st.error("Payload exceeds lift capacity. The drone cannot take off with this configuration.")
         st.stop()
 
-    # Base parameters
+    # Mass calculations
     total_weight_g = frame_weight + battery_weight + payload_weight_g
     total_weight_kg = total_weight_g / 1000
 
-    base_hover_efficiency = 170  # W per kg at optimal thrust
+    base_hover_efficiency = 170  # W/kg^1.5 for hover
     hover_power = base_hover_efficiency * (total_weight_kg ** 1.5)
 
-    drag_factor = 0.005
+    # Flight-specific power draw
+    drag_factor = 0.01  # Increased drag scaling
     drag_draw = drag_factor * (flight_speed_kmh ** 2) if flight_mode != "Hover" else 0
 
-    wind_penalty = 0.2 * wind_speed_kmh  # W added for wind resistance
+    wind_penalty = 0.3 * wind_speed_kmh  # Stronger penalty for wind resistance
 
-    # Efficiency loss near max lift
-    efficiency_penalty = 1 + (payload_weight_g / max_lift) * 0.2
+    # Efficiency penalty increases sharply near lift limit
+    load_ratio = payload_weight_g / max_lift
+    if load_ratio < 0.7:
+        efficiency_penalty = 1
+    elif load_ratio < 0.9:
+        efficiency_penalty = 1.1
+    elif load_ratio <= 1.0:
+        efficiency_penalty = 1.25
+    else:
+        efficiency_penalty = 1.4  # (failsafe if ever triggered)
 
     total_draw = (hover_power + drag_draw + wind_penalty) * efficiency_penalty
     flight_time_minutes = (battery_capacity_wh / total_draw) * 60
+
+    # Apply realistic cap to endurance
+    max_reasonable_minutes = 45
+    if flight_time_minutes > max_reasonable_minutes:
+        flight_time_minutes = max_reasonable_minutes
 
     st.metric("Estimated Flight Time", f"{flight_time_minutes:.1f} minutes")
 
@@ -82,7 +96,7 @@ if submitted:
         st.write("**Tip**: Increase battery size or reduce mission length.")
     if drag_draw > 10:
         st.write("**Tip**: High flight speed may be causing excessive aerodynamic drag. Consider slowing down.")
-    if efficiency_penalty > 1.15:
-        st.write("**Tip**: Heavy payload is reducing overall flight efficiency. Consider trimming weight if possible.")
+    if efficiency_penalty > 1.1:
+        st.write("**Tip**: You're operating near max payload capacity. This significantly reduces efficiency.")
 
 st.caption("Demo project by Tareq Omrani | AI Engineering + UAV | 2025")
