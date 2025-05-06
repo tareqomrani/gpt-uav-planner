@@ -4,9 +4,10 @@ st.set_page_config(page_title="UAV Battery Efficiency Estimator", layout="center
 
 st.title("UAV Battery Efficiency Estimator")
 
+# FINAL ENFORCED max payload values
 STATIC_MAX_LIFT_G = {
-    "Generic Quad": 1000,
-    "DJI Phantom": 1200
+    "Generic Quad": 800,
+    "DJI Phantom": 500
 }
 
 with st.form("uav_form"):
@@ -49,20 +50,16 @@ if submitted:
         st.error("Payload exceeds lift capacity. The drone cannot take off with this configuration.")
         st.stop()
 
-    # Mass calculations
     total_weight_g = frame_weight + battery_weight + payload_weight_g
     total_weight_kg = total_weight_g / 1000
 
-    base_hover_efficiency = 170  # W/kg^1.5 for hover
+    base_hover_efficiency = 170
     hover_power = base_hover_efficiency * (total_weight_kg ** 1.5)
 
-    # Flight-specific power draw
-    drag_factor = 0.01  # Increased drag scaling
+    drag_factor = 0.01
     drag_draw = drag_factor * (flight_speed_kmh ** 2) if flight_mode != "Hover" else 0
+    wind_penalty = 0.3 * wind_speed_kmh
 
-    wind_penalty = 0.3 * wind_speed_kmh  # Stronger penalty for wind resistance
-
-    # Efficiency penalty increases sharply near lift limit
     load_ratio = payload_weight_g / max_lift
     if load_ratio < 0.7:
         efficiency_penalty = 1
@@ -71,12 +68,10 @@ if submitted:
     elif load_ratio <= 1.0:
         efficiency_penalty = 1.25
     else:
-        efficiency_penalty = 1.4  # (failsafe if ever triggered)
+        efficiency_penalty = 1.4
 
     total_draw = (hover_power + drag_draw + wind_penalty) * efficiency_penalty
     flight_time_minutes = (battery_capacity_wh / total_draw) * 60
-
-    # Apply realistic cap to endurance
     max_reasonable_minutes = 45
     if flight_time_minutes > max_reasonable_minutes:
         flight_time_minutes = max_reasonable_minutes
