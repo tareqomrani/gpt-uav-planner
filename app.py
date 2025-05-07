@@ -40,9 +40,11 @@ with st.form("uav_form"):
     flight_speed_kmh = st.number_input("Flight Speed (km/h)", min_value=0.0, value=30.0)
     wind_speed_kmh = st.number_input("Wind Speed (km/h)", min_value=0.0, value=10.0)
     temperature_c = st.number_input("Temperature (°C)", value=25.0)
-    elevation_gain_m = st.number_input("Elevation Gain (meters)", min_value=0, max_value=1000, value=0)
+    elevation_gain_m = st.number_input("Elevation Gain (meters)", min_value=0, max_value=1000, value=0, help="Elevation gain increases power draw. Heavier payloads make climbs more energy-intensive.")
     if elevation_gain_m > 150 and drone_model != "Custom Build":
         st.warning("Warning: This elevation gain may exceed typical small UAV limits.")
+    elif drone_model == "Custom Build" and elevation_gain_m > 250:
+        st.warning("Custom build: verify thrust and power support for high-altitude climbs.")
     flight_mode = st.selectbox("Flight Mode", ["Hover", "Forward Flight", "Waypoint Mission"])
 
     submitted = st.form_submit_button("Estimate")
