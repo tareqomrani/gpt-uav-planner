@@ -64,10 +64,6 @@ if submitted:
         mission_draw = hover_power * 1.25 + 0.022 * (flight_speed_kmh ** 2) + 0.36 * wind_speed_kmh
         total_power_draw = mission_draw
 
-    drag_factor = 0.01
-    drag_draw = drag_factor * (flight_speed_kmh ** 2) if flight_mode != "Hover" else 0
-    wind_penalty = 0.3 * wind_speed_kmh
-
     load_ratio = payload_weight_g / max_lift
     if load_ratio < 0.7:
         efficiency_penalty = 1
@@ -80,8 +76,6 @@ if submitted:
 
     total_draw = total_power_draw * efficiency_penalty
     flight_time_minutes = (battery_capacity_wh / total_draw) * 60
-
-    # Dynamic cap
     max_cap_minutes = min(battery_capacity_wh * 1.2, 120)
     if flight_time_minutes > max_cap_minutes:
         flight_time_minutes = max_cap_minutes
@@ -93,13 +87,13 @@ if submitted:
         st.metric("Estimated Max Distance", f"{flight_distance_km:.2f} km")
 
     st.subheader("AI Suggestions (Simulated GPT)")
-    if payload_weight_g > 800:
-        st.write("**Tip**: Reduce payload to under 800g to increase endurance.")
+    if payload_weight_g > max_lift * 0.7:
+        st.write(f"**Tip**: Reduce payload to under {int(max_lift * 0.7)}g to increase endurance.")
     if wind_speed_kmh > 15:
         st.write("**Tip**: High wind may significantly reduce flight time—consider postponing.")
     if battery_capacity_wh < 30:
         st.write("**Tip**: Increase battery size or reduce mission length.")
-    if drag_draw > 10:
+    if flight_speed_kmh > 40:
         st.write("**Tip**: High flight speed may be causing excessive aerodynamic drag. Consider slowing down.")
     if efficiency_penalty > 1.1:
         st.write("**Tip**: You're operating near max payload capacity. This significantly reduces efficiency.")
