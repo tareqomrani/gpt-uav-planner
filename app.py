@@ -57,9 +57,12 @@ if submitted:
 
     if flight_mode == 'Hover':
         total_power_draw = hover_power
-    else:
+    elif flight_mode == 'Forward Flight':
         forward_draw = hover_power * 1.15 + 0.02 * (flight_speed_kmh ** 2) + 0.3 * wind_speed_kmh
         total_power_draw = forward_draw
+    elif flight_mode == 'Waypoint Mission':
+        mission_draw = hover_power * 1.25 + 0.022 * (flight_speed_kmh ** 2) + 0.36 * wind_speed_kmh
+        total_power_draw = mission_draw
 
     drag_factor = 0.01
     drag_draw = drag_factor * (flight_speed_kmh ** 2) if flight_mode != "Hover" else 0
