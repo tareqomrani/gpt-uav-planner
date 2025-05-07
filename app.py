@@ -40,6 +40,7 @@ with st.form("uav_form"):
     flight_speed_kmh = st.number_input("Flight Speed (km/h)", min_value=0.0, value=30.0)
     wind_speed_kmh = st.number_input("Wind Speed (km/h)", min_value=0.0, value=10.0)
     temperature_c = st.number_input("Temperature (°C)", value=25.0)
+    elevation_gain_m = st.number_input("Elevation Gain (meters)", min_value=0, value=0)
     flight_mode = st.selectbox("Flight Mode", ["Hover", "Forward Flight", "Waypoint Mission"])
 
     submitted = st.form_submit_button("Estimate")
@@ -75,6 +76,17 @@ if submitted:
         efficiency_penalty = 1.4
 
     total_draw = total_power_draw * efficiency_penalty
+
+    # Climb energy penalty
+    climb_energy_j = total_weight_kg * 9.81 * elevation_gain_m
+    climb_energy_wh = climb_energy_j / 3600
+    battery_capacity_wh -= climb_energy_wh
+    st.info(f"Climb Energy Cost: {climb_energy_wh:.2f} Wh")
+
+    if battery_capacity_wh <= 0:
+        st.error("Climb energy exceeds total battery capacity.")
+        st.stop()
+
     flight_time_minutes = (battery_capacity_wh / total_draw) * 60
     max_cap_minutes = min(battery_capacity_wh * 1.2, 120)
     if flight_time_minutes > max_cap_minutes:
