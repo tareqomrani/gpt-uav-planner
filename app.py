@@ -55,6 +55,12 @@ if submitted:
     base_hover_efficiency = 170
     hover_power = base_hover_efficiency * (total_weight_kg ** 1.5)
 
+    if flight_mode == 'Hover':
+        total_power_draw = hover_power
+    else:
+        forward_draw = hover_power * 1.15 + 0.02 * (flight_speed_kmh ** 2) + 0.3 * wind_speed_kmh
+        total_power_draw = forward_draw
+
     drag_factor = 0.01
     drag_draw = drag_factor * (flight_speed_kmh ** 2) if flight_mode != "Hover" else 0
     wind_penalty = 0.3 * wind_speed_kmh
@@ -69,7 +75,7 @@ if submitted:
     else:
         efficiency_penalty = 1.4
 
-    total_draw = (hover_power + drag_draw + wind_penalty) * efficiency_penalty
+    total_draw = total_power_draw * efficiency_penalty
     flight_time_minutes = (battery_capacity_wh / total_draw) * 60
 
     # Dynamic cap
