@@ -52,6 +52,63 @@ def numeric_input(label: str, default: float) -> float:
         return default
 
 # ─────────────────────────────────────────────────────────
+# NEW: Detectability model (AI/IR) helpers
+# ─────────────────────────────────────────────────────────
+def _clamp01(x: float) -> float:
+    return max(0.0, min(1.0, x))
+
+def _risk_bucket(score: float):
+    if score < 33:
+        return ("Low", "success", "#0f9d58")
+    elif score < 67:
+        return ("Moderate", "warning", "#f4b400")
+    else:
+        return ("High", "error", "#db4437")
+
+def _badge(label: str, score: float, bg: str) -> str:
+    return (
+        f"<span style='display:inline-block;padding:6px 10px;margin-right:8px;"
+        f"border-radius:8px;background:{bg};color:#fff;font-weight:600;"
+        f"font-size:13px;white-space:nowrap;'>{label}: {score:.0f}/100</span>"
+    )
+
+def compute_ai_ir_scores(delta_T: float, altitude_m: float, cloud_cover: int,
+                         speed_kmh: float, gustiness: int, stealth_factor: float,
+                         drone_type: str, power_system: str) -> Tuple[float, float]:
+    # AI visual detectability
+    alt_term = 1.0 - min(0.80, altitude_m / 800.0)
+    speed_term = min(1.0, speed_kmh / 60.0) * 0.25
+    type_bonus = 0.15 if drone_type == "rotor" else 0.07
+    gust_term = min(0.15, (gustiness / 10.0) * 0.15)
+    cloud_factor = 1.0 - 0.25 * (cloud_cover / 100.0)
+    stealth_k = 1.0 - max(0.0, (stealth_factor - 1.0) * 0.15)
+    ai_raw = (0.55 * alt_term) + (0.15 * type_bonus) + (0.10 * speed_term) + (0.05 * gust_term)
+    ai_score = 100.0 * _clamp01(ai_raw * cloud_factor * stealth_k)
+
+    # IR thermal detectability
+    delta_norm = _clamp01(delta_T / 22.0)
+    alt_atten = 1.0 - min(0.60, (altitude_m / 1200.0) * 0.60)
+    cloud_attn = 1.0 - 0.30 * (cloud_cover / 100.0)
+    ice_bias = 0.10 if power_system == "ICE" else 0.00
+    stealth_k2 = 1.0 - max(0.0, (stealth_factor - 1.0) * 0.10)
+    ir_raw = (0.70 * delta_norm) + ice_bias
+    ir_score = 100.0 * _clamp01(ir_raw * alt_atten * cloud_attn * stealth_k2)
+
+    return ai_score, ir_score
+
+def render_detectability_alert(ai_score: float, ir_score: float) -> Tuple[str, str]:
+    ai_label, _, ai_bg = _risk_bucket(ai_score)
+    ir_label, _, ir_bg = _risk_bucket(ir_score)
+    overall_kind = "error" if "High" in (ai_label, ir_label) else ("warning" if "Moderate" in (ai_label, ir_label) else "success")
+    badges = (
+        "<div style='margin:6px 0;'>"
+        f"{_badge(f'AI Visual • {ai_label}', ai_score, ai_bg)}"
+        f"{_badge(f'IR Thermal • {ir_label}', ir_score, ir_bg)}"
+        "</div>"
+    )
+    return overall_kind, badges
+
+# ─────────────────────────────────────────────────────────
 # Physics helpers (aerospace-grade)
 # ─────────────────────────────────────────────────────────
 RHO0 = 1.225       # kg/m^3 sea-level
@@ -734,6 +791,28 @@ if submitted:
             if ice_params["hybrid_assist"] and ice_params["assist_duration_min"] > 0:
                 delta_T *= (1.0 - ice_params["assist_fraction"] * 0.3)
 
+            # ───────────────── Detectability Alert (ICE) ─────────────────
+            ai_score, ir_score = compute_ai_ir_scores(
+                delta_T=delta_T,
+                altitude_m=altitude_m,
+                cloud_cover=cloud_cover,
+                speed_kmh=flight_speed_kmh,
+                gustiness=gustiness,
+                stealth_factor=stealth_drag_penalty,
+                drone_type=profile["type"],
+                power_system=profile["power_system"]
+            )
+            overall_kind, badges_html = render_detectability_alert(ai_score, ir_score)
+            st.subheader("AI/IR Detectability Alert")
+            if overall_kind == "success":
+                st.success("Overall detectability: LOW")
+            elif overall_kind == "warning":
+                st.warning("Overall detectability: MODERATE")
+            else:
+                st.error("Overall detectability: HIGH")
+            st.markdown(badges_html, unsafe_allow_html=True)
+            # ─────────────────────────────────────────────────────────────
+
             # Detail panel fields (ICE)
             detail.update({
                 "CD0_eff": CD0, "e_oswald_eff": E_OSW, "eta_prop_eff": ETA_P,
@@ -755,7 +834,7 @@ if submitted:
             flight_time_minutes = dispatch_endurance_min
             climb_L = climb_L_val
 
-            # ===== NEW: Total distance (km) for selected parameters (ICE) =====
+            # ===== Total distance (km) for selected parameters (ICE) =====
             total_distance_km = (flight_time_minutes / 60.0) * float(flight_speed_kmh)
 
             # User-facing metrics (ICE)
@@ -882,6 +961,28 @@ if submitted:
             delta_T = convective_radiative_deltaT(Q_waste, ref_surface, 0.90, temperature_c, rho, V_ref_ms)
             delta_T *= (1.0 - (cloud_cover / 100.0) * 0.35)
 
+            # ───────────────── Detectability Alert (Battery) ─────────────────
+            ai_score, ir_score = compute_ai_ir_scores(
+                delta_T=delta_T,
+                altitude_m=altitude_m,
+                cloud_cover=cloud_cover,
+                speed_kmh=flight_speed_kmh,
+                gustiness=gustiness,
+                stealth_factor=stealth_drag_penalty,
+                drone_type=profile["type"],
+                power_system=profile["power_system"]
+            )
+            overall_kind, badges_html = render_detectability_alert(ai_score, ir_score)
+            st.subheader("AI/IR Detectability Alert")
+            if overall_kind == "success":
+                st.success("Overall detectability: LOW")
+            elif overall_kind == "warning":
+                st.warning("Overall detectability: MODERATE")
+            else:
+                st.error("Overall detectability: HIGH")
+            st.markdown(badges_html, unsafe_allow_html=True)
+            # ────────────────────────────────────────────────────────────────
+
             # Detail panel fields (Battery)
             detail.update({
                 "total_draw_W": round(total_draw,1),
@@ -897,7 +998,7 @@ if submitted:
             flight_time_minutes = dispatch_endurance_min
             climb_L = None
 
-            # ===== NEW: Total distance (km) for selected parameters (Battery) =====
+            # ===== Total distance (km) for selected parameters (Battery) =====
             total_distance_km = (flight_time_minutes / 60.0) * float(flight_speed_kmh)
 
             # User-facing metrics (Battery)
@@ -937,7 +1038,7 @@ if submitted:
         st.header("Selected UAV — Mission Performance")
         st.metric("Dispatchable Endurance", f"{flight_time_minutes:.1f} minutes")
         st.caption(f"Uncertainty band: {lo:.1f}–{hi:.1f} min (±10%)")
-        st.metric("Total Distance (km)", f"{total_distance_km:.1f} km")  # <— NEW VISIBLE FIELD
+        st.metric("Total Distance (km)", f"{total_distance_km:.1f} km")
         st.metric("Best Heading Range", f"{best_km:.1f} km")
         st.metric("Upwind Range", f"{worst_km:.1f} km")
 
@@ -966,19 +1067,27 @@ if submitted:
         human.append(f"- **Terrain × Stealth factor**: {terrain_penalty*stealth_drag_penalty:.3f}")
         human.append(f"- **Thermal ΔT**: {delta_T:.1f} °C")
         human.append(f"- **Dispatchable Endurance**: {flight_time_minutes:.1f} min")
-        human.append(f"- **Total Distance (km)**: {total_distance_km:.2f} km")  # <— NEW LINE IN DETAILED PANEL
+        human.append(f"- **Total Distance (km)**: {total_distance_km:.2f} km")
         human.append(f"- **Best heading / Upwind ranges**: {best_km:.2f} km / {worst_km:.2f} km")
+
+        # Detectability in Detailed Panel
+        human.append(f"- **Detectability (AI visual / IR thermal):** {ai_score:.0f}/100 / {ir_score:.0f}/100")
+        human.append(f"- **Overall Detectability:** {'LOW' if overall_kind=='success' else 'MODERATE' if overall_kind=='warning' else 'HIGH'}")
 
         st.markdown("\n".join(human))
 
         # Machine-readable JSON for the detailed panel
         detail.update({
             "dispatch_endurance_min": round(flight_time_minutes,1),
-            "total_distance_km": round(total_distance_km,2),      # <— NEW IN JSON
+            "total_distance_km": round(total_distance_km,2),
             "best_heading_range_km": round(best_km,2),
             "upwind_range_km": round(worst_km,2),
             "thermal_deltaT_C": round(delta_T,1),
             "wind_penalty_%": round(wind_penalty_pct,1),
+            # NEW Detectability fields
+            "ai_visual_score_0_100": round(ai_score,1),
+            "ir_thermal_score_0_100": round(ir_score,1),
+            "detectability_overall": ("LOW" if overall_kind=="success" else "MODERATE" if overall_kind=="warning" else "HIGH")
         })
         st.json(detail, expanded=False)
 
@@ -1148,10 +1257,14 @@ if submitted:
             "Climb Energy (Wh)": round(climb_energy_Wh_value, 2) if (profile["power_system"]=="Battery") else None,
             "Climb Fuel (L)": round(climb_L, 2) if ('climb_L' in locals() and climb_L is not None) else None,
             "Dispatchable Endurance (min)": round(flight_time_minutes, 1),
-            "Total Distance (km)": round(total_distance_km, 2),   # <— NEW IN EXPORT
+            "Total Distance (km)": round(total_distance_km, 2),
             "Best Heading Range (km)": round(best_km, 2),
             "Upwind Range (km)": round(worst_km, 2),
-            "ΔT (°C)": round(delta_T, 1)
+            "ΔT (°C)": round(delta_T, 1),
+            # Detectability fields
+            "AI Visual Detectability (0-100)": round(ai_score,1),
+            "IR Thermal Detectability (0-100)": round(ir_score,1),
+            "Overall Detectability": ("LOW" if overall_kind=="success" else "MODERATE" if overall_kind=="warning" else "HIGH")
         }
 
         df_res = pd.DataFrame([results])
