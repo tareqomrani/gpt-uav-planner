@@ -1,5 +1,4 @@
-![UAV Battery Efficiency Estimator Banner](./16F28914-AB05-44E9-AB0B-3E6051E6D48E.png)
-
+![UAV Battery Efficiency Estimator](banner.png)
 # UAV Battery Efficiency Estimator
 
 This is a lightweight AI-powered estimator for calculating UAV (drone) flight time and distance based on key mission parameters.
