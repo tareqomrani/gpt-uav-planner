@@ -18,6 +18,7 @@ Live app script: Final_Full_App.py • Framework: Streamlit • Author: Tareq Om
 	•	Individual UAV Detailed Results: replaces “Quick Look” table with a rich, copy-ready panel + machine-readable JSON.
 	•	Mobile-friendly UX: auto-select inputs on focus; clean gauges; clear warnings.
 	•	One-click Exports: Scenario Summary + Detailed Results (CSV/JSON) and Swarm Playback/Waypoints CSV.
+
 🧭 Workflow (at a glance)
 	1.	Pick a UAV → fixed-wing or rotorcraft (battery or ICE).
 	2.	Set mission → payload, speed, altitude, wind/gusts, terrain & stealth factors, waypoints, mode.
