@@ -15,7 +15,7 @@ BSFC fuel burn, climb fuel, usable fuel fraction, and **Hybrid Assist** (battery
 
 ---
 
-**🕵️ Stealth & Detectability:**  
+**🥷 Stealth & Detectability:**  
 AI-visual and IR-thermal scores (0–100), factoring cloud cover, altitude, speed, gusts, and stealth-load penalties with color-coded risk badges.  
 
 **🤖 LLM Mission Advisor:**  
