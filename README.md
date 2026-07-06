@@ -8,7 +8,7 @@ ISA density, fixed-wing drag polar, rotor induced-power scaling, gust/terrain pe
 🔋 Battery + ⛽ ICE
 Battery derating, usable capacity, live battery/fuel gauges, BSFC fuel burn, climb fuel, usable fuel fraction, and MQ-1 / MQ-9 Hybrid Assist.
 
-🕵️ Stealth & Detectability
+🥷 Stealth & Detectability
 AI-visual and IR-thermal scores (0–100), factoring cloud cover, altitude, speed, gusts, platform type, power system, thermal ΔT, and stealth-load penalties.
 
 🤖 LLM Mission Advisor
